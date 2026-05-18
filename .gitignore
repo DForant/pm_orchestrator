@@ -1,0 +1,19 @@
+# Windows Thumbnail Cache
+Thumbs.db
+ehthumbs.db
+
+# .NET / Visual Studio Build Outputs
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# Node / Frontend Dependecies
+node_modules/
+dist/
+.env.local
+.env.*.local
+
+# IDE Configs
+.vscode/
