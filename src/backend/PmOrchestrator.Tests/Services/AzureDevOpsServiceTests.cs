@@ -38,12 +38,14 @@ public class AzureDevOpsServiceTests
     }
 
     [Theory]
-    [InlineData(HttpStatusCode.NotFound, typeof(WorkItemNotFoundException), LogLevel.Warning)]
-    [InlineData(HttpStatusCode.Unauthorized, typeof(WorkItemAccessDeniedException), LogLevel.Error)]
+    [InlineData(HttpStatusCode.NotFound, typeof(WorkItemNotFoundException), LogLevel.Warning, "not found")]
+    [InlineData(HttpStatusCode.Unauthorized, typeof(WorkItemAccessDeniedException), LogLevel.Error, "unauthorized")]
+    [InlineData(HttpStatusCode.InternalServerError, typeof(HttpRequestException), LogLevel.Error, "failed with status code")]
     public async Task GetWorkItemAsync_WhenResponseIsNotSuccessful_LogsAndThrowsExpectedException(
         HttpStatusCode statusCode,
         Type expectedExceptionType,
-        LogLevel expectedLogLevel)
+        LogLevel expectedLogLevel,
+        string expectedMessageFragment)
     {
         var (sut, logger, _) = CreateService(statusCode, "{}");
 
@@ -51,7 +53,7 @@ public class AzureDevOpsServiceTests
 
         Assert.NotNull(exception);
         Assert.IsType(expectedExceptionType, exception);
-        VerifyLoggerCall(logger, expectedLogLevel);
+        VerifyLoggerCall(logger, expectedLogLevel, expectedMessageFragment);
     }
 
     private static (AzureDevOpsService Sut, Mock<ILogger<AzureDevOpsService>> Logger, Mock<HttpMessageHandler> Handler) CreateService(HttpStatusCode statusCode, string responseBody)
@@ -87,13 +89,13 @@ public class AzureDevOpsServiceTests
         return (sut, logger, handler);
     }
 
-    private static void VerifyLoggerCall(Mock<ILogger<AzureDevOpsService>> logger, LogLevel expectedLogLevel)
+    private static void VerifyLoggerCall(Mock<ILogger<AzureDevOpsService>> logger, LogLevel expectedLogLevel, string expectedMessageFragment)
     {
         logger.Verify(
             x => x.Log(
                 It.Is<LogLevel>(l => l == expectedLogLevel),
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((_, _) => true),
+                It.Is<It.IsAnyType>((state, _) => state.ToString()!.Contains(expectedMessageFragment, StringComparison.OrdinalIgnoreCase)),
                 It.IsAny<Exception?>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);

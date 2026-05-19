@@ -52,7 +52,14 @@ public class AzureDevOpsService : IAzureDevOpsService
             throw new WorkItemAccessDeniedException();
         }
 
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError(
+                "Azure DevOps request for work item {WorkItemId} failed with status code {StatusCode}.",
+                id,
+                response.StatusCode);
+            response.EnsureSuccessStatusCode();
+        }
 
         await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
         using var document = await JsonDocument.ParseAsync(contentStream, cancellationToken: cancellationToken);
@@ -66,9 +73,12 @@ public class AzureDevOpsService : IAzureDevOpsService
             description = ReadField(fields, "System.ReproSteps");
         }
 
-        var tags = ReadField(fields, "System.Tags")
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .ToList();
+        var tagsRaw = ReadField(fields, "System.Tags");
+        var tags = string.IsNullOrWhiteSpace(tagsRaw)
+            ? []
+            : tagsRaw
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
 
         return new WorkItemDto
         {
