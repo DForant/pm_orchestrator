@@ -8,6 +8,7 @@ builder.Services.AddHttpClient("AzureDevOps");
 builder.Services.AddScoped<IAzureDevOpsService, AzureDevOpsService>();
 builder.Services.AddHttpClient("GitHub");
 builder.Services.AddScoped<IGitHubService, GitHubService>();
+builder.Services.AddScoped<IOrchestrationService, OrchestrationService>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
